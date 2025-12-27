@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考拉小狗日记 - Koala Dog Log</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @font-face {
+            font-family: 'YouYuan';
+            src: local('幼圆'), local('YouYuan');
+        }
+        * {
+            font-family: '幼圆', 'YouYuan', 'Microsoft YaHei UI', 'Microsoft YaHei', 'SimSun', sans-serif !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-paw"></i>
+                <span>考拉小狗日记</span>
+            </div>
+            <div class="nav-user">
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <span id="username"></span>
+                    <button class="btn-logout" onclick="logout()">退出</button>
+                </div>
+                <button class="btn-login" id="btnLogin" onclick="showLoginModal()">登录</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 登录/注册模态框 -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAuthModal()">&times;</span>
+            <div class="auth-tabs">
+                <button class="tab-btn active" onclick="switchTab('login')">登录</button>
+                <button class="tab-btn" onclick="switchTab('register')">注册</button>
+            </div>
+            <div id="loginForm" class="auth-form">
+                <input type="text" id="loginUsername" placeholder="用户名或邮箱" required>
+                <input type="password" id="loginPassword" placeholder="密码" required>
+                <button class="btn-primary" onclick="login()">登录</button>
+            </div>
+            <div id="registerForm" class="auth-form" style="display: none;">
+                <input type="text" id="regUsername" placeholder="用户名" required>
+                <input type="email" id="regEmail" placeholder="邮箱" required>
+                <input type="password" id="regPassword" placeholder="密码" required>
+                <button class="btn-primary" onclick="register()">注册</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 - 四个模块并排显示 -->
+    <main class="main-content">
+        <div class="modules-grid">
+            <!-- 第一行：健康日志（左）和成长相册（右） -->
+            <div class="module-card health-module">
+                <div class="module-header">
+                    <h2><i class="fas fa-heartbeat"></i> 健康日志</h2>
+                </div>
+                <div class="module-body">
+                    <div class="health-tabs">
+                        <button class="tab-btn active" onclick="switchHealthTab('diet')">饮食</button>
+                        <button class="tab-btn" onclick="switchHealthTab('poop')">便便</button>
+                        <button class="tab-btn" onclick="switchHealthTab('walk')">遛狗</button>
+                        <button class="tab-btn" onclick="switchHealthTab('stats')">统计</button>
+                    </div>
+
+                    <!-- 饮食记录 -->
+                    <div id="dietTab" class="health-tab-content active">
+                        <button class="btn-add" onclick="showDietForm()">
+                            <i class="fas fa-plus"></i> 添加记录
+                        </button>
+                        <div id="dietForm" class="record-form" style="display: none;">
+                            <input type="text" id="dietFoodType" placeholder="食物类型">
+                            <input type="number" id="dietAmount" placeholder="分量(克)" step="0.01">
+                            <input type="number" id="dietCalories" placeholder="热量(卡路里)" step="0.01">
+                            <input type="datetime-local" id="dietTime">
+                            <textarea id="dietNotes" placeholder="备注"></textarea>
+                            <button class="btn-primary" onclick="submitDietRecord()">提交</button>
+                        </div>
+                        <div id="dietRecords" class="records-list"></div>
+                    </div>
+
+                    <!-- 便便健康 -->
+                    <div id="poopTab" class="health-tab-content">
+                        <button class="btn-add" onclick="showPoopForm()">
+                            <i class="fas fa-plus"></i> 添加记录
+                        </button>
+                        <div id="poopForm" class="record-form" style="display: none;">
+                            <input type="datetime-local" id="poopTime">
+                            <label>健康评分 (1-5级)</label>
+                            <input type="range" id="poopScore" min="1" max="5" value="3" oninput="updateScoreDisplay(this.value)">
+                            <span id="scoreDisplay">3</span>
+                            <input type="text" id="poopColor" placeholder="颜色">
+                            <textarea id="poopNotes" placeholder="备注"></textarea>
+                            <button class="btn-primary" onclick="submitPoopRecord()">提交</button>
+                        </div>
+                        <div id="poopRecords" class="records-list"></div>
+                    </div>
+
+                    <!-- 遛狗记录 -->
+                    <div id="walkTab" class="health-tab-content">
+                        <button class="btn-add" onclick="showWalkForm()">
+                            <i class="fas fa-plus"></i> 添加记录
+                        </button>
+                        <div id="walkForm" class="record-form" style="display: none;">
+                            <input type="datetime-local" id="walkStartTime">
+                            <input type="datetime-local" id="walkEndTime">
+                            <input type="number" id="walkDistance" placeholder="距离(公里)" step="0.01" required>
+                            <input type="text" id="walkRoute" placeholder="路线信息" required>
+                            <button class="btn-primary" onclick="submitWalkRecord()">提交</button>
+                        </div>
+                        <div id="walkRecords" class="records-list"></div>
+                    </div>
+
+                    <!-- 统计图表 -->
+                    <div id="statsTab" class="health-tab-content">
+                        <select id="statsPeriod" onchange="loadStats()" class="stats-select">
+                            <option value="week">最近一周</option>
+                            <option value="month">最近一月</option>
+                        </select>
+                        <div class="charts-container">
+                            <div class="chart-card">
+                                <h3>每日热量摄入</h3>
+                                <canvas id="dietChart"></canvas>
+                            </div>
+                            <div class="chart-card">
+                                <h3>便便健康评分</h3>
+                                <canvas id="poopChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 成长相册 -->
+            <div class="module-card album-module">
+                <div class="module-header">
+                    <h2><i class="fas fa-images"></i> 成长相册</h2>
+                </div>
+                <div class="module-body">
+                    <div class="album-controls">
+                        <button class="btn-primary" onclick="showPhotoUploadForm()">
+                            <i class="fas fa-upload"></i> 上传照片
+                        </button>
+                        <select id="monthFilter" onchange="loadAlbumData()" class="month-select">
+                            <option value="">全部月份</option>
+                        </select>
+                    </div>
+                    <div id="photoGrid" class="photo-grid"></div>
+                </div>
+            </div>
+
+            <!-- 第二行：智能助手（左）和社交网络（右） -->
+            <div class="module-card ai-module">
+                <div class="module-header">
+                    <h2><i class="fas fa-robot"></i> 智能助手</h2>
+                </div>
+                <div class="module-body">
+                    <div class="ai-sidebar">
+                        <button class="btn-primary" onclick="getHealthAdvice()">
+                            <i class="fas fa-stethoscope"></i> 健康建议
+                        </button>
+                        <button class="btn-primary" onclick="getTrainingTips()">
+                            <i class="fas fa-graduation-cap"></i> 训狗技巧
+                        </button>
+                        <button class="btn-primary" onclick="detectAnomalies()">
+                            <i class="fas fa-exclamation-triangle"></i> 异常检测
+                        </button>
+                    </div>
+                    <div class="ai-chat">
+                        <div id="chatMessages" class="chat-messages"></div>
+                        <div class="chat-input-container">
+                            <input type="text" id="chatInput" placeholder="输入消息..." onkeypress="handleChatKeyPress(event)">
+                            <button class="btn-primary" onclick="sendChatMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="alertsList" class="alerts-container" style="display: none;">
+                        <h3>健康预警</h3>
+                        <div id="alertsContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 社交网络 -->
+            <div class="module-card social-module">
+                <div class="module-header">
+                    <h2><i class="fas fa-users"></i> 社交网络</h2>
+                </div>
+                <div class="module-body">
+                    <div class="social-tabs">
+                        <button class="tab-btn active" onclick="switchSocialTab('contacts')">联系人</button>
+                        <button class="tab-btn" onclick="switchSocialTab('graph')">关系图谱</button>
+                        <button class="tab-btn" onclick="switchSocialTab('interactions')">互动</button>
+                        <button class="tab-btn" onclick="switchSocialTab('share')">分享</button>
+                    </div>
+
+                    <!-- 联系人 -->
+                    <div id="contactsTab" class="social-tab-content active">
+                        <div class="section-header">
+                            <button class="btn-primary" onclick="showAddHumanContact()">
+                                <i class="fas fa-user"></i> 添加人类
+                            </button>
+                            <button class="btn-primary" onclick="showAddDogContact()">
+                                <i class="fas fa-dog"></i> 添加狗狗
+                            </button>
+                        </div>
+                        <div id="contactsList" class="contacts-list"></div>
+                    </div>
+
+                    <!-- 关系图谱 -->
+                    <div id="graphTab" class="social-tab-content">
+                        <div id="relationshipGraph" class="relationship-graph"></div>
+                    </div>
+
+                    <!-- 互动记录 -->
+                    <div id="interactionsTab" class="social-tab-content">
+                        <button class="btn-add" onclick="showInteractionForm()">
+                            <i class="fas fa-plus"></i> 添加记录
+                        </button>
+                        <div id="interactionForm" class="record-form" style="display: none;">
+                            <select id="interactionType">
+                                <option value="play">玩耍</option>
+                                <option value="meet">见面</option>
+                                <option value="visit">拜访</option>
+                                <option value="other">其他</option>
+                            </select>
+                            <select id="interactionTargetType">
+                                <option value="human">人类</option>
+                                <option value="dog">狗狗</option>
+                            </select>
+                            <input type="text" id="interactionTargetId" placeholder="目标ID">
+                            <input type="datetime-local" id="interactionDate">
+                            <textarea id="interactionDescription" placeholder="描述"></textarea>
+                            <button class="btn-primary" onclick="submitInteraction()">提交</button>
+                        </div>
+                        <div id="interactionsList" class="records-list"></div>
+                    </div>
+
+                    <!-- 分享设置 -->
+                    <div id="shareTab" class="social-tab-content">
+                        <button class="btn-add" onclick="showShareForm()">
+                            <i class="fas fa-share-alt"></i> 创建分享
+                        </button>
+                        <div id="shareForm" class="record-form" style="display: none;">
+                            <select id="shareModule">
+                                <option value="health">健康日志</option>
+                                <option value="album">成长相册</option>
+                                <option value="all">全部</option>
+                            </select>
+                            <select id="sharePermission">
+                                <option value="view">查看</option>
+                                <option value="comment">评论</option>
+                                <option value="edit">编辑</option>
+                            </select>
+                            <input type="number" id="shareExpires" placeholder="有效期(天，留空为永久)">
+                            <button class="btn-primary" onclick="createShare()">创建</button>
+                        </div>
+                        <div id="shareLinks" class="share-links"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 照片上传模态框 -->
+    <div id="photoUploadForm" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closePhotoUploadForm()">&times;</span>
+            <h2>上传照片</h2>
+            <input type="file" id="photoFile" accept="image/*">
+            <input type="datetime-local" id="photoTime">
+            <textarea id="photoDescription" placeholder="照片描述（用于AI识别标签）"></textarea>
+            <input type="number" id="photoWeight" placeholder="体重(kg)" step="0.01">
+            <input type="number" id="photoLength" placeholder="身长(cm)" step="0.01">
+            <input type="text" id="photoManualTags" placeholder="手动标签（用逗号分隔）">
+            <button class="btn-primary" onclick="uploadPhoto()">上传</button>
+        </div>
+    </div>
+
+    <!-- 添加联系人模态框 -->
+    <div id="contactModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeContactModal()">&times;</span>
+            <div id="contactFormContent"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/health.js"></script>
+    <script src="js/album.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/social.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
